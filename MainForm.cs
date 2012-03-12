@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -57,10 +58,17 @@ namespace MultiAppLauncher
             }
         }
 
+        private IEnumerable GetItemsToExecute()
+        {
+            if (listView1.SelectedItems.Count == 0)
+                return listView1.Items;
+            return listView1.SelectedItems;
+        }
+
         private void runToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // execute all processes in the listbox
-            foreach (ListViewItem item in listView1.Items)
+            foreach (ListViewItem item in GetItemsToExecute())
             {
                 if (item.Tag == null)
                 {
@@ -79,8 +87,6 @@ namespace MultiAppLauncher
                     process.Exited += ProcessOnExited;
                     process.Start();
 
-
-                    // arguments?
                     item.Tag = process;
                     item.SubItems[StatusColumn].Text = Resources.StatusRunning;
                 }

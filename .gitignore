@@ -1,0 +1,6 @@
+
+_ReSharper.MultiAppLauncher/*
+bin/*
+*.user
+obj/*
+MultiAppLauncher.suo
