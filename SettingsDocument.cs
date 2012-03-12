@@ -12,7 +12,7 @@ namespace MultiAppLauncher
         {
             var serializer = new XmlSerializer(typeof (SettingsDocument));
             
-            using (var stream = File.Open(fileName, FileMode.Truncate, FileAccess.Write))
+            using (var stream = File.Open(fileName, FileMode.Create))
             {
                 serializer.Serialize(stream, this);
             }

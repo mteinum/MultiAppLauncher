@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 using System.Windows.Forms;
 using MultiAppLauncher.Properties;
 
@@ -110,6 +111,13 @@ namespace MultiAppLauncher
 
         private string _currentFileName;
 
+        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _currentFileName = null;
+
+            saveToolStripMenuItem_Click(sender, e);
+        }
+
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // if currentfilename is empty; ask for a new one
@@ -129,7 +137,19 @@ namespace MultiAppLauncher
 
             if (!String.IsNullOrEmpty(_currentFileName))
             {
-                CreateSettingsDocument().Save(_currentFileName);
+                try
+                {
+                    CreateSettingsDocument().Save(_currentFileName);
+                }
+                catch (Exception ex)
+                {
+                    _currentFileName = null;
+
+                    var builder = new StringBuilder();
+                    builder.AppendFormat("Failed to write file. Try another filename. {0}", ex);
+
+                    MessageBox.Show(this, builder.ToString(), Resources.CaptionError, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 

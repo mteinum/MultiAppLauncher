@@ -79,6 +79,15 @@ namespace MultiAppLauncher.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Error.
+        /// </summary>
+        internal static string CaptionError {
+            get {
+                return ResourceManager.GetString("CaptionError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to XML Files (*.xml)|*.xml.
         /// </summary>
         internal static string DialogFilter {
