@@ -53,7 +53,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CoTaskbarList.cs" />
     <Compile Include="FileSettings.cs" />
+    <Compile Include="ITaskbarList.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

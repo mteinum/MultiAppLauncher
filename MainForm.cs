@@ -2,7 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using MultiAppLauncher.Properties;
 
@@ -13,9 +15,14 @@ namespace MultiAppLauncher
         private const int ProfileColumn = 1;
         private const int StatusColumn = 2;
 
+        private readonly ITaskbarList _taskbarList;
+
         public MainForm()
         {
             InitializeComponent();
+
+            _taskbarList = (ITaskbarList) new CoTaskbarList();
+            _taskbarList.HrInit();
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -70,27 +77,41 @@ namespace MultiAppLauncher
             // execute all processes in the listbox
             foreach (ListViewItem item in GetItemsToExecute())
             {
-                if (item.Tag == null)
-                {
+                if (item.Tag != null)
+                    continue;
+                
+                var process = new Process
+                                  {
+                                      StartInfo =
+                                          {
+                                              FileName = item.Text,
+                                              UseShellExecute = true,
+                                              Arguments = item.SubItems[ProfileColumn].Text
+                                          },
+                                      EnableRaisingEvents = true
+                                  };
 
-                    var process = new Process
-                    {
-                        StartInfo =
-                            {
-                                FileName = item.Text,
-                                UseShellExecute = true,
-                                Arguments = item.SubItems[ProfileColumn].Text
-                            },
-                        EnableRaisingEvents = true
-                    };
+                process.Exited += ProcessOnExited;
+                process.Start();
 
-                    process.Exited += ProcessOnExited;
-                    process.Start();
+                WaitForMainWindow(process);
 
-                    item.Tag = process;
-                    item.SubItems[StatusColumn].Text = Resources.StatusRunning;
-                }
+                ModifyProcess(process.MainWindowHandle);
+
+                item.Tag = process;
+                item.SubItems[StatusColumn].Text = Resources.StatusRunning;
             }
+        }
+
+        private static void WaitForMainWindow(Process process)
+        {
+            while (process.MainWindowHandle == IntPtr.Zero && !process.HasExited)
+                Thread.Sleep(10);
+        }
+
+        private void ModifyProcess(IntPtr hWnd)
+        {
+            _taskbarList.DeleteTab(hWnd);
         }
 
         private void ProcessOnExited(object sender, EventArgs eventArgs)
@@ -201,16 +222,50 @@ namespace MultiAppLauncher
 
         private void listView1_DoubleClick(object sender, EventArgs e)
         {
-            if (listView1.SelectedItems.Count != 1)
+            if (listView1.SelectedItems.Count == 0)
                 return;
 
             var selectedItem = listView1.SelectedItems[0];
 
-            var dlg = new SelectProfile();
+            var p = selectedItem.Tag as Process;
 
-            if (dlg.ShowDialog(this) == DialogResult.OK)
+            if (p == null)
+                return;
+
+            SetForegroundWindow(p.MainWindowHandle.ToInt32());
+        }
+
+        [DllImport("User32.dll")]
+        public static extern Int32 SetForegroundWindow(int hWnd);
+
+        private void killAllToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem lvi in listView1.Items)
             {
-                selectedItem.SubItems[ProfileColumn].Text = dlg.SelectedProfile;
+                var process = lvi.Tag as Process;
+
+                if (process == null)
+                    continue;
+
+                process.Kill();
+            }
+        }
+
+        private void listView1_MouseClick(object sender, MouseEventArgs e)
+        {
+            if ((e.Button & MouseButtons.Right) == MouseButtons.Right)
+            {
+                if (listView1.SelectedItems.Count == 0)
+                    return;
+
+                var selectedItem = listView1.SelectedItems[0];
+
+                var dlg = new SelectProfile();
+
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    selectedItem.SubItems[ProfileColumn].Text = dlg.SelectedProfile;
+                }
             }
         }
     }
