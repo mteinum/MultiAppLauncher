@@ -6,3 +6,13 @@ http://www.teinum.no/2012/03/multiapplauncher.html
 
 The icon is from "Basal Icons BY designkindle"
   http://www.freeiconsweb.com/Free-Downloads.asp?id=1761
+
+Changelog
+
+1.2 Implemented CPU monitoring and soft start. Pressing Delete will remove all selected entries in the listview.
+
+Download
+
+Goto the download page for binaries:
+
+https://github.com/mteinum/MultiAppLauncher/downloads
