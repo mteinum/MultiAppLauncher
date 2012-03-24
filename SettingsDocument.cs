@@ -6,6 +6,9 @@ namespace MultiAppLauncher
 {
     public class SettingsDocument
     {
+        [XmlAttribute("softstart")]
+        public int SoftStart;
+
         public List<FileSettings> FileNames;
 
         public void Save(string fileName)

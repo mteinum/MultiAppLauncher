@@ -1,28 +1,32 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
+using System.Linq;
 using System.Windows.Forms;
 using MultiAppLauncher.Properties;
 
 namespace MultiAppLauncher
 {
-    public partial class MainForm : Form
+    public partial class MainForm : Form, IMainFormView
     {
-        private const int ProfileColumn = 1;
-        private const int StatusColumn = 2;
-
-        private readonly ITaskbarList _taskbarList;
+        private readonly StorageController _storageController;
+        private readonly CpuController _cpuController;
+        private readonly ProcessController _processController;
+        private readonly DragDropController _dragDropController;
+        private readonly ProfileController _profileController;
 
         public MainForm()
         {
             InitializeComponent();
 
-            _taskbarList = (ITaskbarList) new CoTaskbarList();
-            _taskbarList.HrInit();
+            _storageController = new StorageController(this);
+            _cpuController = new CpuController(this);
+            _processController = new ProcessController(this);
+            _dragDropController = new DragDropController(this);
+            _profileController = new ProfileController(this);
+
+            SoftStartSeconds = 2;
+
+            SetToolStripFileName(String.Empty);
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -30,189 +34,34 @@ namespace MultiAppLauncher
             Application.Exit();
         }
 
-        private void AddFileNameToList(string fileName, string profile)
-        {
-            var x = new ListViewItem(new[]
-                                         {
-                                             fileName,
-                                             profile,
-                                             "---"
-                                         });
-
-            listView1.Items.Add(x);
-        }
-
         private void listView1_DragDrop(object sender, DragEventArgs e)
         {
-            var fileNames = e.Data.GetData("FileNameW") as string[];
-
-            if (fileNames == null || fileNames.Length == 0)
-                return;
-
-            var profile = new SelectProfile();
-
-            if (profile.ShowDialog(this) == DialogResult.OK)
-            {
-                AddFileNameToList(fileNames[0], profile.SelectedProfile);
-            }
+            _dragDropController.DragDrop(e);
         }
 
         private void listView1_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent("FileNameW"))
-            {
-                e.Effect = DragDropEffects.Copy;
-            }
-        }
-
-        private IEnumerable GetItemsToExecute()
-        {
-            if (listView1.SelectedItems.Count == 0)
-                return listView1.Items;
-            return listView1.SelectedItems;
+            _dragDropController.DragEnter(e);
         }
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // execute all processes in the listbox
-            foreach (ListViewItem item in GetItemsToExecute())
-            {
-                if (item.Tag != null)
-                    continue;
-                
-                var process = new Process
-                                  {
-                                      StartInfo =
-                                          {
-                                              FileName = item.Text,
-                                              UseShellExecute = true,
-                                              Arguments = item.SubItems[ProfileColumn].Text
-                                          },
-                                      EnableRaisingEvents = true
-                                  };
-
-                process.Exited += ProcessOnExited;
-                process.Start();
-
-                WaitForMainWindow(process);
-
-                ModifyProcess(process.MainWindowHandle);
-
-                item.Tag = process;
-                item.SubItems[StatusColumn].Text = Resources.StatusRunning;
-            }
+            _processController.StartProcesses();
         }
-
-        private static void WaitForMainWindow(Process process)
-        {
-            while (process.MainWindowHandle == IntPtr.Zero && !process.HasExited)
-                Thread.Sleep(10);
-        }
-
-        private void ModifyProcess(IntPtr hWnd)
-        {
-            _taskbarList.DeleteTab(hWnd);
-        }
-
-        private void ProcessOnExited(object sender, EventArgs eventArgs)
-        {
-            foreach (ListViewItem item in listView1.Items)
-            {
-                var process = (Process)item.Tag;
-
-                if (process == null)
-                {
-                    item.SubItems[StatusColumn].Text = String.Empty;
-                }
-                else if (process.HasExited)
-                {
-                    item.SubItems[StatusColumn].Text = String.Empty;
-                    item.Tag = null;
-                }
-                else
-                {
-                    item.SubItems[StatusColumn].Text = Resources.StatusRunning;
-                }
-            }
-        }
-
-        private string _currentFileName;
 
         private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            _currentFileName = null;
-
-            saveToolStripMenuItem_Click(sender, e);
+            _storageController.SaveAs();
         }
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // if currentfilename is empty; ask for a new one
-            if (String.IsNullOrEmpty(_currentFileName))
-            {
-                var sfd = new SaveFileDialog
-                              {
-                                  DefaultExt = ".xml",
-                                  Filter = Resources.DialogFilter
-                              };
-
-                if (sfd.ShowDialog(this) == DialogResult.OK)
-                {
-                    Text = _currentFileName = sfd.FileName;
-                }
-            }
-
-            if (!String.IsNullOrEmpty(_currentFileName))
-            {
-                try
-                {
-                    CreateSettingsDocument().Save(_currentFileName);
-                }
-                catch (Exception ex)
-                {
-                    _currentFileName = null;
-
-                    var builder = new StringBuilder();
-                    builder.AppendFormat("Failed to write file. Try another filename. {0}", ex);
-
-                    MessageBox.Show(this, builder.ToString(), Resources.CaptionError, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-        }
-
-        private SettingsDocument CreateSettingsDocument()
-        {
-            var doc = new SettingsDocument { FileNames = new List<FileSettings>() };
-
-            foreach (ListViewItem item in listView1.Items)
-            {
-                doc.FileNames.Add(new FileSettings
-                                      {
-                                          Name = item.Text,
-                                          Profile = item.SubItems[ProfileColumn].Text
-                                      });
-            }
-
-            return doc;
+            _storageController.Save();
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var ofd = new OpenFileDialog { Filter = Resources.DialogFilter };
-
-            if (ofd.ShowDialog(this) == DialogResult.OK)
-            {
-                _currentFileName = Text = ofd.FileName;
-
-                var settings = SettingsDocument.Load(_currentFileName);
-
-                listView1.Items.Clear();
-
-                foreach (var entry in settings.FileNames)
-                {
-                    AddFileNameToList(entry.Name, entry.Profile);
-                }
-            }
+            _storageController.Open();
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -222,51 +71,108 @@ namespace MultiAppLauncher
 
         private void listView1_DoubleClick(object sender, EventArgs e)
         {
-            if (listView1.SelectedItems.Count == 0)
-                return;
-
-            var selectedItem = listView1.SelectedItems[0];
-
-            var p = selectedItem.Tag as Process;
-
-            if (p == null)
-                return;
-
-            SetForegroundWindow(p.MainWindowHandle.ToInt32());
+            _processController.BringSelectedAppToFront();
         }
-
-        [DllImport("User32.dll")]
-        public static extern Int32 SetForegroundWindow(int hWnd);
 
         private void killAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            foreach (ListViewItem lvi in listView1.Items)
-            {
-                var process = lvi.Tag as Process;
-
-                if (process == null)
-                    continue;
-
-                process.Kill();
-            }
+            _processController.KillAll();
         }
 
         private void listView1_MouseClick(object sender, MouseEventArgs e)
         {
-            if ((e.Button & MouseButtons.Right) == MouseButtons.Right)
+            _profileController.ChangeProfile(e);
+        }
+
+        private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _storageController.ChangeProperties();
+        }
+
+        private void listView1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
             {
-                if (listView1.SelectedItems.Count == 0)
-                    return;
-
-                var selectedItem = listView1.SelectedItems[0];
-
-                var dlg = new SelectProfile();
-
-                if (dlg.ShowDialog(this) == DialogResult.OK)
+                foreach (ListViewItem lvi in GetSelectedItems())
                 {
-                    selectedItem.SubItems[ProfileColumn].Text = dlg.SelectedProfile;
+                    lvi.Remove();
                 }
             }
+        }
+
+        private int _softStartSeconds;
+
+        public int SoftStartSeconds
+        {
+            get { return _softStartSeconds; }
+            set
+            {
+                _softStartSeconds = value;
+                toolStripStatusLabelSoftStart.Text = String.Format("Soft start: {0} sec", value);
+            }
+        }
+
+        public IEnumerable<ListViewItem> GetListViewItems()
+        {
+            if (InvokeRequired)
+            {
+                IEnumerable<ListViewItem> result = null;
+                Invoke(new MethodInvoker(() => result = GetListViewItems().ToList()));
+                return result;
+            }
+
+            return listView1.Items.Cast<ListViewItem>();
+        }
+
+        public IEnumerable<ListViewItem> GetSelectedItems()
+        {
+            if (InvokeRequired)
+            {
+                IEnumerable<ListViewItem> result = null;
+                Invoke(new MethodInvoker(() => result = GetSelectedItems().ToList()));
+                return result;
+            }
+
+            return listView1.SelectedItems.Cast<ListViewItem>();
+        }
+
+        public void SetListViewItem(ListViewItem lvi, int column, string text)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(() => SetListViewItem(lvi, column, text)));
+            }
+            else
+            {
+                lvi.SubItems[column].Text = text;
+            }
+        }
+
+        public void AddListViewItem(ListViewItem lvi)
+        {
+            listView1.Items.Add(lvi);
+        }
+
+        public void ClearListView()
+        {
+            listView1.Items.Clear();
+        }
+
+        public void SetToolStripProgressBar(int value)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(() => SetToolStripProgressBar(value)));
+            }
+            else
+            {
+                toolStripProgressBar1.Value = value;
+            }
+        }
+
+        public void SetToolStripFileName(string fileName)
+        {
+            toolStripStatusLabelFileName.Text = fileName;
         }
     }
 }
