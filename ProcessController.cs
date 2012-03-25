@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using MultiAppLauncher.Properties;
@@ -11,6 +10,8 @@ namespace MultiAppLauncher
 {
     public class ProcessController
     {
+        public EventHandler<EventArgs> AllProcessesStarted;
+
         private readonly IMainFormView _view;
         private readonly ITaskbarList _taskbarList;
 
@@ -73,18 +74,16 @@ namespace MultiAppLauncher
             if (p == null)
                 return;
 
-            SetForegroundWindow(p.Process.MainWindowHandle.ToInt32());
+            Unmanaged.SetForegroundWindow(p.Process.MainWindowHandle.ToInt32());
         }
 
-        [DllImport("User32.dll")]
-        public static extern Int32 SetForegroundWindow(int hWnd);
 
         private IEnumerable<ListViewItem> GetItemsToExecute()
         {
-            var items = _view.GetSelectedItems().ToList();
+            var items = _view.GetSelectedItems();
 
             if (!items.Any())
-                items = _view.GetListViewItems().ToList();
+                items = _view.GetListViewItems();
 
             return items;
         }
@@ -120,26 +119,30 @@ namespace MultiAppLauncher
                     holder.Process.Start();
 
                     WaitForMainWindow(holder.Process);
+                    ModifyProcess(holder.Process.MainWindowHandle);
 
                     holder.CpuUsage = holder.Process.TotalProcessorTime.TotalMilliseconds;
 
-                    ModifyProcess(holder.Process.MainWindowHandle);
-
                     lvi.Tag = holder;
-                    _view.SetListViewItem(lvi, Columns.Status, Resources.StatusRunning);
-                    _view.SetListViewItem(lvi, Columns.Cpu, 0d.ToString("P"));
+                    _view.SetListViewItem(lvi, Columns.Status, Resources.StatusStarting);
 
                     double totalMs = _view.SoftStartSeconds * 1000d;
                     TimeSpan wait = TimeSpan.FromMilliseconds(totalMs / 10d);
 
-                    for (int i = 0; i < 100; i += 10)
+                    for (int i = 0; i <= 100; i += 10)
                     {
                         _view.SetToolStripProgressBar(i);
                         Thread.Sleep(wait);
                     }
 
+                    _view.SetListViewItem(lvi, Columns.Status, Resources.StatusRunning);
                     _view.SetToolStripProgressBar(0);
                 }
+
+                var subscribers = AllProcessesStarted;
+
+                if (subscribers != null)
+                    subscribers(this, new EventArgs());
             }
         }
 
@@ -182,7 +185,6 @@ namespace MultiAppLauncher
                 }
             }
         }
-
 
     }
 }

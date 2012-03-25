@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
@@ -13,6 +14,7 @@ namespace MultiAppLauncher
         private readonly ProcessController _processController;
         private readonly DragDropController _dragDropController;
         private readonly ProfileController _profileController;
+        private readonly WindowController _windowController;
 
         public MainForm()
         {
@@ -23,10 +25,17 @@ namespace MultiAppLauncher
             _processController = new ProcessController(this);
             _dragDropController = new DragDropController(this);
             _profileController = new ProfileController(this);
+            _windowController = new WindowController(this);
 
             SoftStartSeconds = 2;
+            ToolStripFileName = String.Empty;
 
-            SetToolStripFileName(String.Empty);
+            _processController.AllProcessesStarted += AllProcessesStarted;
+        }
+
+        private void AllProcessesStarted(object sender, EventArgs eventArgs)
+        {
+            SafeSet(() => _windowController.AutoLayout(Handle));
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -112,40 +121,25 @@ namespace MultiAppLauncher
             }
         }
 
-        public IEnumerable<ListViewItem> GetListViewItems()
+        public string ToolStripFileName
         {
-            if (InvokeRequired)
-            {
-                IEnumerable<ListViewItem> result = null;
-                Invoke(new MethodInvoker(() => result = GetListViewItems().ToList()));
-                return result;
-            }
-
-            return listView1.Items.Cast<ListViewItem>();
+            get { return toolStripStatusLabelFileName.Text; }
+            set { toolStripStatusLabelFileName.Text = value; }
         }
 
-        public IEnumerable<ListViewItem> GetSelectedItems()
+        public List<ListViewItem> GetListViewItems()
         {
-            if (InvokeRequired)
-            {
-                IEnumerable<ListViewItem> result = null;
-                Invoke(new MethodInvoker(() => result = GetSelectedItems().ToList()));
-                return result;
-            }
+            return SafeGet(() => listView1.Items);
+        }
 
-            return listView1.SelectedItems.Cast<ListViewItem>();
+        public List<ListViewItem> GetSelectedItems()
+        {
+            return SafeGet(() => listView1.SelectedItems);
         }
 
         public void SetListViewItem(ListViewItem lvi, int column, string text)
         {
-            if (InvokeRequired)
-            {
-                Invoke(new MethodInvoker(() => SetListViewItem(lvi, column, text)));
-            }
-            else
-            {
-                lvi.SubItems[column].Text = text;
-            }
+            SafeSet(() => lvi.SubItems[column].Text = text);
         }
 
         public void AddListViewItem(ListViewItem lvi)
@@ -160,19 +154,43 @@ namespace MultiAppLauncher
 
         public void SetToolStripProgressBar(int value)
         {
+            SafeSet(() => toolStripProgressBar1.Value = value);
+        }
+
+        private void SafeSet(Action action)
+        {
             if (InvokeRequired)
             {
-                Invoke(new MethodInvoker(() => SetToolStripProgressBar(value)));
+                Invoke(action);
             }
             else
             {
-                toolStripProgressBar1.Value = value;
+                action();
             }
         }
 
-        public void SetToolStripFileName(string fileName)
+        private List<ListViewItem> SafeGet(Func<IEnumerable> func)
         {
-            toolStripStatusLabelFileName.Text = fileName;
+            if (InvokeRequired)
+            {
+                List<ListViewItem> result = null;
+                Invoke(new MethodInvoker(delegate { result = SafeGet(func); }));
+                return result;
+            }
+
+            return func().Cast<ListViewItem>().ToList();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            _cpuController.Stop();
+
+            base.OnFormClosing(e);
+        }
+
+        private void layoutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _windowController.AutoLayout(Handle);
         }
     }
 }

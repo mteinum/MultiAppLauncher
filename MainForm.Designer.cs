@@ -43,6 +43,7 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.layoutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
@@ -166,7 +167,8 @@
             // editToolStripMenuItem
             // 
             this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.settingsToolStripMenuItem});
+            this.settingsToolStripMenuItem,
+            this.layoutToolStripMenuItem});
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
             this.editToolStripMenuItem.Text = "&Edit";
@@ -174,9 +176,17 @@
             // settingsToolStripMenuItem
             // 
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
-            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.settingsToolStripMenuItem.Text = "&Settings";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
+            // 
+            // layoutToolStripMenuItem
+            // 
+            this.layoutToolStripMenuItem.Name = "layoutToolStripMenuItem";
+            this.layoutToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F12;
+            this.layoutToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.layoutToolStripMenuItem.Text = "&Layout";
+            this.layoutToolStripMenuItem.Click += new System.EventHandler(this.layoutToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -265,6 +275,7 @@
         private System.Windows.Forms.ColumnHeader columnHeaderCpu;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelSoftStart;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelFileName;
+        private System.Windows.Forms.ToolStripMenuItem layoutToolStripMenuItem;
     }
 }
 

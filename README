@@ -10,6 +10,7 @@ The icon is from "Basal Icons BY designkindle"
 Changelog
 
 1.2 Implemented CPU monitoring and soft start. Pressing Delete will remove all selected entries in the listview.
+1.3 Done some refactoring and removed duplicate code. AutoLayout implementation, first edition
 
 Download
 

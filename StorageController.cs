@@ -8,8 +8,6 @@ namespace MultiAppLauncher
 {
     public class StorageController
     {
-        private string _currentFileName;
-
         private readonly IMainFormView _view;
 
         public StorageController(IMainFormView view)
@@ -19,13 +17,13 @@ namespace MultiAppLauncher
 
         public void SaveAs()
         {
-            _currentFileName = null;
+            _view.ToolStripFileName = null;
             Save();
         }
 
         public void Save()
         {
-            if (String.IsNullOrEmpty(_currentFileName))
+            if (String.IsNullOrEmpty(_view.ToolStripFileName))
             {
                 var sfd = new SaveFileDialog
                               {
@@ -35,20 +33,19 @@ namespace MultiAppLauncher
 
                 if (sfd.ShowDialog(_view) == DialogResult.OK)
                 {
-                    _currentFileName = sfd.FileName;
-                    _view.SetToolStripFileName(_currentFileName);
+                    _view.ToolStripFileName = sfd.FileName;
                 }
             }
 
-            if (!String.IsNullOrEmpty(_currentFileName))
+            if (!String.IsNullOrEmpty(_view.ToolStripFileName))
             {
                 try
                 {
-                    CreateSettingsDocument().Save(_currentFileName);
+                    CreateSettingsDocument().Save(_view.ToolStripFileName);
                 }
                 catch (Exception ex)
                 {
-                    _currentFileName = null;
+                    _view.ToolStripFileName = null;
 
                     var builder = new StringBuilder();
                     builder.AppendFormat("Failed to write file. Try another filename. {0}", ex);
@@ -88,10 +85,9 @@ namespace MultiAppLauncher
 
             if (ofd.ShowDialog(_view) == DialogResult.OK)
             {
-                _currentFileName = ofd.FileName;
-                _view.SetToolStripFileName(_currentFileName);
+                _view.ToolStripFileName = ofd.FileName;
 
-                var settings = SettingsDocument.Load(_currentFileName);
+                var settings = SettingsDocument.Load(ofd.FileName);
 
                 _view.SoftStartSeconds = settings.SoftStart;
 

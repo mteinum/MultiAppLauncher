@@ -7,8 +7,8 @@ namespace MultiAppLauncher
     {
         int SoftStartSeconds { get; set; }
         
-        IEnumerable<ListViewItem> GetListViewItems();
-        IEnumerable<ListViewItem> GetSelectedItems();
+        List<ListViewItem> GetListViewItems();
+        List<ListViewItem> GetSelectedItems();
 
         void SetListViewItem(ListViewItem lvi, int column, string text);
 
@@ -16,6 +16,6 @@ namespace MultiAppLauncher
         void ClearListView();
 
         void SetToolStripProgressBar(int value);
-        void SetToolStripFileName(string fileName);
+        string ToolStripFileName { get; set; }
     }
 }

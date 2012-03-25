@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Windows.Forms;
 
 namespace MultiAppLauncher
 {
@@ -15,18 +13,11 @@ namespace MultiAppLauncher
 
         public CpuController(IMainFormView view)
         {
-            Application.ApplicationExit += ApplicationOnApplicationExit;
-
             _view = view;
 
             _exitEvent = new AutoResetEvent(false);
             _cpuMeasureThread = new Thread(MeasureCpu);
             _cpuMeasureThread.Start();
-        }
-
-        private void ApplicationOnApplicationExit(object sender, EventArgs eventArgs)
-        {
-            _exitEvent.Set();
         }
 
         public void Stop()
@@ -60,6 +51,9 @@ namespace MultiAppLauncher
             foreach (var lvi in processes)
             {
                 var holder = lvi.GetProcessHolder();
+
+                if (holder == null)
+                    continue;
 
                 var oldCpu = holder.CpuUsage;
                 var newCpu = holder.Process.TotalProcessorTime.TotalMilliseconds;

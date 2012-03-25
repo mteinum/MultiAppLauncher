@@ -104,5 +104,14 @@ namespace MultiAppLauncher.Properties {
                 return ResourceManager.GetString("StatusRunning", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Starting.
+        /// </summary>
+        internal static string StatusStarting {
+            get {
+                return ResourceManager.GetString("StatusStarting", resourceCulture);
+            }
+        }
     }
 }

@@ -88,7 +88,11 @@
     <Compile Include="PropertyDialog.Designer.cs">
       <DependentUpon>PropertyDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="SetWindowPosFlags.cs" />
+    <Compile Include="SpecialWindowHandles.cs" />
     <Compile Include="StorageController.cs" />
+    <Compile Include="Unmanaged.cs" />
+    <Compile Include="WindowController.cs" />
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
